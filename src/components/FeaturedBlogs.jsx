@@ -1,12 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function MostPopular({ blogs }) {
+export default function FeaturedBlogs({ blogs, title }) {
   const navigate = useNavigate();
 
   return (
     <div>
-      <div className="blog-heading text-start pt-3 py-2 mb-4">Most Popular</div>
+      <div className="blog-heading text-start pt-3 py-2 mb-4">{title}</div>
       {blogs?.map((item) => (
         <div
           className="row pb-3"
@@ -24,7 +24,7 @@ export default function MostPopular({ blogs }) {
           <div className="col-7 padding">
             <div className="text-start most-popular-font">{item.title}</div>
             <div className="text-start most-popular-font-meta">
-              {item.timestamp.toDate().toDateString()}
+              {item.timestamp?.toDate().toDateString()}
             </div>
           </div>
         </div>

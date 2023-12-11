@@ -20,6 +20,10 @@ import { useEffect, useState } from "react";
 import Auth from "./pages/Auth";
 import { auth } from "./firebase";
 import { signOut } from "firebase/auth";
+import TagBlog from "./pages/TagBlog";
+import Category from "./components/Category";
+import CategoryPage from "./pages/CategoryPage";
+import ScrollToTop from "./components/scrollToTop";
 
 function App() {
   const [active, setActive] = useState("home");
@@ -83,10 +87,15 @@ function App() {
         user={user}
         handleLogout={handleLogout}
       />
+      <ScrollToTop />
       <ToastContainer />
       <Routes>
         <Route path="/" element={<Home user={user} />} />
-        <Route path="/detail/:id" element={<Details setActive={setActive} />} />
+        <Route path="/search" element={<Home user={user} />} />
+        <Route
+          path="/detail/:id"
+          element={<Details setActive={setActive} user={user} />}
+        />
         <Route
           path="/create"
           element={<AddEditBlog user={user} setActive={setActive} />}
@@ -95,7 +104,11 @@ function App() {
           path="/update/:id"
           element={<AddEditBlog user={user} setActive={setActive} />}
         />
+
+        <Route path="/tag/:tag" element={<TagBlog />} />
+
         <Route path="/about" element={<About />} />
+        <Route path="/category/:category" element={<CategoryPage />} />
         <Route
           path="/auth"
           element={<Auth setActive={setActive} setUser={setUser} />}

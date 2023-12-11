@@ -48,7 +48,7 @@ export default function Trending({ blogs }) {
                 <div className="trending-img-absolute-1">
                   <span className="text-white">{excerpt(item.title, 20)}</span>
                   <div className="trending-meta-info">
-                    {item.author}-{item.timestamp.toDate().toDateString()}
+                    {item.author}-{item.timestamp?.toDate().toDateString()}
                   </div>
                 </div>
               </div>

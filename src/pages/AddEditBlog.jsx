@@ -21,6 +21,9 @@ const initialState = {
   trending: "no",
   category: "",
   description: "",
+  comments: [],
+  likes: [],
+  Dislikes: [],
 };
 
 const categoryOptions = [

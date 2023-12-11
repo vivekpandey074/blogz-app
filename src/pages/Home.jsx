@@ -6,6 +6,7 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  orderBy,
   query,
   where,
 } from "firebase/firestore";
@@ -13,14 +14,27 @@ import { db } from "../firebase";
 import { toast } from "react-toastify";
 import Spinner from "../components/Spinner";
 import Tags from "../components/Tags";
-import MostPopular from "../components/MostPopular";
 import Trending from "../components/Trending";
+import Search from "../components/Search";
+import { isEmpty, isNull } from "lodash";
+import { useLocation } from "react-router-dom";
+import Category from "../components/Category";
+import FeaturedBlogs from "../components/FeaturedBlogs";
+
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
 
 export default function Home({ user }) {
   const [loading, setLoading] = useState(true);
   const [blogs, setBlogs] = useState([]);
   const [tags, setTags] = useState([]);
   const [trendBlogs, setTrendBlogs] = useState([]);
+  const [search, setSearch] = useState("");
+  const queryString = useQuery();
+  const searchQuery = queryString.get("searchQuery");
+  const [totalBlogs, setTotalBlogs] = useState([]);
+  const [mostengagment, setMostEngagement] = useState([]);
 
   const getTrendingBlogs = async () => {
     const blogRef = collection(db, "blogs");
@@ -48,6 +62,7 @@ export default function Home({ user }) {
         const uniqueTags = [...new Set(tags)];
         setTags(uniqueTags);
         setBlogs(list);
+        setTotalBlogs(list);
         setLoading(false);
       },
       (error) => {
@@ -77,6 +92,82 @@ export default function Home({ user }) {
       }
     }
   };
+  const getBlogs = async () => {
+    const blogRef = collection(db, "blogs");
+    const blogsQuery = query(blogRef, orderBy("likes", "desc"));
+    const docSnapshot = await getDocs(blogRef);
+    const sortedSnapshot = await getDocs(blogsQuery);
+
+    setMostEngagement(
+      sortedSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    );
+    setBlogs(docSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  };
+
+  const handleChange = (e) => {
+    const { value } = e.target;
+    setSearch(value);
+  };
+
+  useEffect(() => {
+    if (!isNull(searchQuery)) {
+      searchBlogs();
+    } else {
+      getBlogs();
+    }
+  }, [searchQuery]);
+
+  const searchBlogs = async () => {
+    const blogRef = collection(db, "blogs");
+    const searchTitle = query(
+      blogRef,
+      where("title", ">=", searchQuery),
+      where("title", "<=", searchQuery + "\uf8ff")
+    );
+
+    const searchTagQuery = query(
+      blogRef,
+      where("tags", "array-contains", searchQuery)
+    );
+
+    const titleSnapshot = await getDocs(searchTitle);
+    const tagSnapshot = await getDocs(searchTagQuery);
+
+    let searchTitleBlogs = [];
+    let searchTagBlogs = [];
+
+    titleSnapshot.forEach((doc) => {
+      searchTitleBlogs.push({ id: doc.id, ...doc.data() });
+    });
+
+    tagSnapshot.forEach((doc) => {
+      searchTagBlogs.push({ id: doc.id, ...doc.data() });
+    });
+
+    const combinedSearchBlogs = searchTitleBlogs.concat(searchTagBlogs);
+
+    setBlogs(combinedSearchBlogs);
+  };
+
+  //Category Count
+
+  const counts = totalBlogs?.reduce((prevValue, currentValue) => {
+    let name = currentValue.category;
+    if (!prevValue.hasOwnProperty(name)) {
+      prevValue[name] = 0;
+    }
+
+    prevValue[name]++;
+    // delete prevValue["undefined"];
+    return prevValue;
+  }, {});
+
+  const categoryCount = Object.keys(counts).map((k) => {
+    return {
+      category: k,
+      count: counts[k],
+    };
+  });
 
   if (loading) return <Spinner />;
 
@@ -87,15 +178,32 @@ export default function Home({ user }) {
           <div className="row mx-0">
             <Trending blogs={trendBlogs} />
             <div className="col-md-8">
-              <BlogSection
-                blogs={blogs}
-                user={user}
-                handleDelete={handleDelete}
-              />
+              <div className="blog-heading text-start py-2 mb-4">
+                Daily Blogs
+              </div>
+
+              {blogs.length === 0 && location.pathname !== "/" && (
+                <>
+                  <h4>
+                    No blogs found for the search query:{" "}
+                    <strong>{searchQuery}</strong>
+                  </h4>
+                </>
+              )}
+              {blogs?.map((blog) => (
+                <BlogSection
+                  key={blog.id}
+                  user={user}
+                  handleDelete={handleDelete}
+                  {...blog}
+                />
+              ))}
             </div>
             <div className="col-md-3">
+              <Search search={search} handleChange={handleChange} />
               <Tags tags={tags} />
-              <MostPopular blogs={blogs} />
+              <FeaturedBlogs blogs={mostengagment} title={"Most Popular"} />
+              <Category catgBlogCount={categoryCount} />
             </div>
           </div>
         </div>
